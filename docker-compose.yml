@@ -1,0 +1,90 @@
+services:
+  # MariaDB Database
+  mariadb:
+    image: mariadb:10.6
+    container_name: frappe-mariadb
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --skip-innodb-read-only-compressed
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-admin}
+      MYSQL_DATABASE: ${DB_NAME:-frappe}
+      MYSQL_USER: ${DB_USER:-frappe}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-frappe}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - frappe-network
+
+  # Redis Cache
+  redis-cache:
+    image: redis:alpine
+    container_name: frappe-redis-cache
+    restart: unless-stopped
+    volumes:
+      - redis-cache-data:/data
+    networks:
+      - frappe-network
+
+  # Redis Queue
+  redis-queue:
+    image: redis:alpine
+    container_name: frappe-redis-queue
+    restart: unless-stopped
+    volumes:
+      - redis-queue-data:/data
+    networks:
+      - frappe-network
+
+  # Frappe Bench (Development)
+  frappe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frappe-bench
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    working_dir: /workspace/frappe-bench
+    environment:
+      - SHELL=/bin/bash
+      - DB_HOST=mariadb
+      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-admin}
+      - FRAPPE_BRANCH=${FRAPPE_BRANCH:-version-15}
+      - SITE_NAME=${SITE_NAME:-dev.localhost}
+    volumes:
+      - workspace:/workspace
+      - ./scripts:/scripts:ro
+    ports:
+      - "8000:8000"
+      - "9000:9000"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+    networks:
+      - frappe-network
+    command: bash -c "sleep infinity"
+
+volumes:
+  mariadb-data:
+  redis-cache-data:
+  redis-queue-data:
+  workspace:
+
+networks:
+  frappe-network:
+    driver: bridge

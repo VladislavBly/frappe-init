@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose build:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker info:*)",
+      "Bash(powershell.exe -Command \"cd ''d:/frappe/frappe_react''; docker-compose build\")",
+      "Bash(powershell.exe -Command \"Get-Content ''C:\\\\Users\\\\Phoenix\\\\.claude\\\\projects\\\\d--frappe-frappe-react\\\\82a1d8eb-f080-43f0-9f04-a7e06a06c1fd\\\\tool-results\\\\toolu_017zNXH3J13ay1qMihWYAGPP.txt'' | Select-Object -Last 20\")",
+      "Bash(powershell.exe:*)"
+    ]
+  }
+}
